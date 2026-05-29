@@ -1,0 +1,30 @@
+services:
+  - type: worker
+    name: api-key-scanner
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter  # $7/mo minimum — upgrade to get more RAM/CPU for speed
+    envVars:
+      - key: SCAN_TIMEOUT
+        value: "1.5"
+      - key: HTTP_TIMEOUT
+        value: "5.0"
+      - key: MAX_CONCURRENT_SCANS
+        value: "300"
+      - key: MAX_CONCURRENT_PROBES
+        value: "50"
+      - key: IPS_PER_BATCH
+        value: "100"
+      - key: STATS_INTERVAL_MIN
+        value: "30"
+      - key: USE_TELEGRAM
+        value: "true"
+    # For max speed, use the Professional plan ($20/mo) or higher:
+    # plan: professional  # 4 CPU / 8GB RAM
+    # plan: advanced  # 8 CPU / 16GB RAM
+    # plan: pro_plus  # 16 CPU / 32GB RAM — ~$450/mo
+    # Uncomment below for the high-spec config:
+    # plan: pro_plus
+    # scaling:
+    #   minInstances: 1
+    #   maxInstances: 1
