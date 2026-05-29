@@ -66,6 +66,10 @@ class APIKeyScanner:
 
                 self.ports_found += len(open_ports)
 
+                # Log open ports periodically for diagnostics
+                if self.ports_found <= 100 or self.ports_found % 50 == 0:
+                    logger.info(f"OPEN PORTS on {ip}: {open_ports}")
+
                 # Step 2: HTTP probe every open port for keys
                 for port in open_ports:
                     keys = await self.http_probe.probe_ip_port(ip, port)
