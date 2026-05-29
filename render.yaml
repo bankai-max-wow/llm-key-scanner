@@ -3,28 +3,29 @@ services:
     name: api-key-scanner
     env: docker
     dockerfilePath: ./Dockerfile
-    plan: starter  # $7/mo minimum — upgrade to get more RAM/CPU for speed
+    # ──────────────────────────────────────────────
+    # $450/mo = Pro Ultra = 8 CPU / 32 GB RAM
+    # See render.com/pricing for plan options:
+    #   starter     $7/mo   0.5 CPU   512 MB
+    #   standard   $25/mo   1  CPU     2 GB
+    #   pro        $85/mo   2  CPU     4 GB
+    #   pro_plus  $175/mo   4  CPU     8 GB
+    #   pro_max   $225/mo   4  CPU    16 GB
+    #   pro_ultra $450/mo   8  CPU    32 GB  ← YOU WANT THIS
+    # ──────────────────────────────────────────────
+    plan: pro_ultra
     envVars:
       - key: SCAN_TIMEOUT
-        value: "1.5"
+        value: "1.0"          # Tighter timeout = faster failures = more throughput
       - key: HTTP_TIMEOUT
-        value: "5.0"
+        value: "4.0"
       - key: MAX_CONCURRENT_SCANS
-        value: "300"
+        value: "2000"          # 8 CPU can push 2k async TCP connects easy
       - key: MAX_CONCURRENT_PROBES
-        value: "50"
+        value: "200"
       - key: IPS_PER_BATCH
-        value: "100"
+        value: "500"           # Bigger batches = less loop overhead
       - key: STATS_INTERVAL_MIN
-        value: "30"
+        value: "15"
       - key: USE_TELEGRAM
         value: "true"
-    # For max speed, use the Professional plan ($20/mo) or higher:
-    # plan: professional  # 4 CPU / 8GB RAM
-    # plan: advanced  # 8 CPU / 16GB RAM
-    # plan: pro_plus  # 16 CPU / 32GB RAM — ~$450/mo
-    # Uncomment below for the high-spec config:
-    # plan: pro_plus
-    # scaling:
-    #   minInstances: 1
-    #   maxInstances: 1

@@ -265,12 +265,12 @@ async def main():
     import os
 
     scanner = APIKeyScanner(
-        scan_timeout=float(os.getenv("SCAN_TIMEOUT", "1.5")),
-        http_timeout=float(os.getenv("HTTP_TIMEOUT", "5.0")),
-        max_concurrent_scans=int(os.getenv("MAX_CONCURRENT_SCANS", "300")),
-        max_concurrent_probes=int(os.getenv("MAX_CONCURRENT_PROBES", "50")),
-        ips_per_batch=int(os.getenv("IPS_PER_BATCH", "100")),
-        stats_interval_mins=int(os.getenv("STATS_INTERVAL_MIN", "30")),
+        scan_timeout=float(os.getenv("SCAN_TIMEOUT", "1.0")),
+        http_timeout=float(os.getenv("HTTP_TIMEOUT", "4.0")),
+        max_concurrent_scans=int(os.getenv("MAX_CONCURRENT_SCANS", "2000")),
+        max_concurrent_probes=int(os.getenv("MAX_CONCURRENT_PROBES", "200")),
+        ips_per_batch=int(os.getenv("IPS_PER_BATCH", "500")),
+        stats_interval_mins=int(os.getenv("STATS_INTERVAL_MIN", "15")),
         use_telegram=os.getenv("USE_TELEGRAM", "true").lower() == "true",
     )
 

@@ -218,7 +218,7 @@ class FoundKey:
 class HTTPProbe:
     """HTTP prober — checks endpoints and extracts API keys."""
 
-    def __init__(self, timeout: float = 5.0, max_concurrent: int = 100):
+    def __init__(self, timeout: float = 4.0, max_concurrent: int = 200):
         self.timeout = timeout
         self.semaphore = asyncio.Semaphore(max_concurrent)
         self.connector = aiohttp.TCPConnector(limit=0, force_close=True)

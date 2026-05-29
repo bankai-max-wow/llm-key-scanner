@@ -76,7 +76,7 @@ TARGET_PORTS = [
 class PortScanner:
     """Async TCP connect port scanner."""
 
-    def __init__(self, timeout: float = 1.5, max_concurrent: int = 500):
+    def __init__(self, timeout: float = 1.0, max_concurrent: int = 2000):
         self.timeout = timeout
         self.semaphore = asyncio.Semaphore(max_concurrent)
 
