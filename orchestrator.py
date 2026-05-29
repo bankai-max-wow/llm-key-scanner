@@ -29,7 +29,7 @@ class APIKeyScanner:
         self,
         scan_timeout: float = 0.8,
         http_timeout: float = 3.0,
-        max_concurrent_scanning: int = 5000,
+        max_concurrent_scanning: int = 10000,
         stats_interval_secs: int = 15,
         use_telegram: bool = True,
     ):
@@ -220,8 +220,8 @@ async def main():
     """Entry point."""
     scanner = APIKeyScanner(
         scan_timeout=float(os.getenv("SCAN_TIMEOUT", "0.8")),
-        http_timeout=float(os.getenv("HTTP_TIMEOUT", "3.0")),
-        max_concurrent_scanning=int(os.getenv("MAX_CONCURRENT_IPS", "5000")),
+        http_timeout=float(os.getenv("HTTP_TIMEOUT", "5.0")),
+        max_concurrent_scanning=int(os.getenv("MAX_CONCURRENT_IPS", "10000")),
         stats_interval_secs=int(os.getenv("STATS_INTERVAL_SEC", "15")),
         use_telegram=os.getenv("USE_TELEGRAM", "true").lower() == "true",
     )
